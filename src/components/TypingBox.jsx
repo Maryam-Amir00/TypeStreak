@@ -1,5 +1,6 @@
 import React, {useState , useEffect , useRef} from 'react'
 import { loadWords } from '../utils/loadWords'
+import TimerPanel from './TimerPanel';
 
 const TypingBox = () => {
     const [wordList , setWordList] = useState([]);
@@ -10,6 +11,9 @@ const TypingBox = () => {
     const [hasJumpedBack, setHasJumpedBack] = useState(false);
     const [isInputFocused, setIsInputFocused] = useState(true);
     const [typedHistory, setTypedHistory] = useState([]);
+    const [selectedTime, setSelectedTime] = useState(30); 
+    const [timeLeft, setTimeLeft] = useState(30);
+    const [isSessionActive, setIsSessionActive] = useState(false);
     const inputRef = useRef(null);
 
 
@@ -44,12 +48,35 @@ const TypingBox = () => {
         }
       }, [wordList]);
   
+      useEffect(() => {
+        if(!isSessionActive) return;
+
+        if(timeLeft === 0){
+          setIsSessionActive(false);
+          setIsInputFocused(false);
+          return;
+        }
+
+        const timerId = setInterval(() => {
+          setTimeLeft((prev) => prev - 1);
+        }, 1000);
+
+        return () => clearInterval(timerId);
+      }, [isSessionActive, timeLeft]);
+
+      useEffect(() => {
+        setTimeLeft(selectedTime);
+      }, [selectedTime]);
 
     const handleInputChange = (e) => {
       let value = e.target.value;
       value = value.replace(/\s+$/, ' ');
       setTypedInput(value);
       setHasJumpedBack(false);
+
+      if(!isSessionActive && timeLeft > 0){
+        setIsSessionActive(true);
+      }
 
       if(value.endsWith(" ") && value.trim().length > 0){
         evaluateWord(value.trim());
@@ -125,6 +152,13 @@ const TypingBox = () => {
       <h1 className="text-2xl font-bold mb-4 text-center text-cyan-400">
         TypeStreak
       </h1>
+
+      <TimerPanel
+        selectedTime={selectedTime}
+        setSelectedTime={setSelectedTime}
+        timeLeft={timeLeft}
+        isSessionActive={isSessionActive}
+      />
 
       <div
         className="bg-[#252526] text-[#d4d4d4] border border-[#333] p-6 rounded-lg shadow-md min-h-[150px] leading-relaxed text-sm sm:text-base md:text-lg cursor-text"

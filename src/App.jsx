@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import TypingBox from './components/TypingBox'
+import TimerPanel from './components/TimerPanel'
 
 
 function App() {
