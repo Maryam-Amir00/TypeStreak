@@ -13,6 +13,7 @@ const TypingBox = () => {
     const [selectedTime, setSelectedTime] = useState(30); 
     const [timeLeft, setTimeLeft] = useState(30);
     const [isSessionActive, setIsSessionActive] = useState(false);
+    const [skippedCount, setSkippedCount] = useState(0);
     const inputRef = useRef(null);
 
 
@@ -88,12 +89,17 @@ const TypingBox = () => {
         if (typedInput.length > 0) {
           return;
         }
-
-        if (activeWordIndex > 0) {
+    
+        const prevIndex = activeWordIndex - 1;
+    
+        // Prevent backspace if previous word was correct
+        if (prevIndex >= 0 && wordStatus[prevIndex] === "correct") {
           e.preventDefault();
+          return;
         }
-        if (activeWordIndex > 0) {
-          const prevIndex = activeWordIndex - 1;
+    
+        if (prevIndex >= 0) {
+          e.preventDefault();
           setActiveWordIndex(prevIndex);
           setTypedInput(typedHistory[prevIndex] || "");
     
@@ -105,31 +111,42 @@ const TypingBox = () => {
           setWordStatus(updatedStatus);
         }
       }
-    };
-    
-    
+    };    
     
 
-    const evaluateWord = (input) => {
-      if (activeWordIndex >= wordList.length - 1) {
-        setIsLoading(true);
-        loadWordBatch();
-        return;
-      }
+const evaluateWord = (input) => {
+  if (activeWordIndex >= wordList.length - 1) {
+    setIsLoading(true);
+    loadWordBatch();
+    return;
+  }
 
-      const currentWord = wordList[activeWordIndex];
-      const isCorrect = input === currentWord;
-    
-      const updatedStatus = [...wordStatus];
-      updatedStatus[activeWordIndex] = isCorrect ? "correct" : "incorrect";
-      setWordStatus(updatedStatus);
-    
-      const updatedTypedHistory = [...typedHistory];
-      updatedTypedHistory[activeWordIndex] = input;
-      setTypedHistory(updatedTypedHistory);
-    
-      setActiveWordIndex((prevIndex) => prevIndex + 1);
-    };
+  const currentWord = wordList[activeWordIndex];
+  const isCorrect = input === currentWord;
+
+  // Prevent skipping more than 2 words
+  if (!isCorrect && input === "") {
+    if (skippedCount >= 2) {
+      return; // Block further skipping
+    }
+    setSkippedCount(skippedCount + 1);
+  }
+
+  if (isCorrect) {
+    setSkippedCount(0); // Reset on correct word
+  }
+
+  const updatedStatus = [...wordStatus];
+  updatedStatus[activeWordIndex] = isCorrect ? "correct" : "incorrect";
+  setWordStatus(updatedStatus);
+
+  const updatedTypedHistory = [...typedHistory];
+  updatedTypedHistory[activeWordIndex] = input;
+  setTypedHistory(updatedTypedHistory);
+
+  setActiveWordIndex((prevIndex) => prevIndex + 1);
+};
+
     
     
     
