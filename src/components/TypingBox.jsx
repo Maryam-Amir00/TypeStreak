@@ -126,7 +126,7 @@ const evaluateWord = (input) => {
 
   // Prevent skipping more than 2 words
   if (!isCorrect && input === "") {
-    if (skippedCount >= 2) {
+    if (skippedCount === 0) {
       return; // Block further skipping
     }
     setSkippedCount(skippedCount + 1);
