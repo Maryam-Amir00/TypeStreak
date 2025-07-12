@@ -7,7 +7,6 @@ const TimerPanel = ({ selectedTime, setSelectedTime, timeLeft, isSessionActive }
   return (
     <div className="flex flex-col sm:flex-row justify-between items-center text-sm sm:text-base gap-4 mb-6">
 
-      {/* Elegant Time Buttons */}
       <div className="flex gap-5 flex-wrap justify-center font-mono">
         {timeOptions.map((time) => (
           <button

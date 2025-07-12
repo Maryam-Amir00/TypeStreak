@@ -1,6 +1,7 @@
 import React, {useState , useEffect , useRef} from 'react'
 import { loadWords } from '../utils/loadWords'
 import TimerPanel from './TimerPanel';
+import ResultsModal from './ResultsModal';
 
 const TypingBox = () => {
     const [wordList , setWordList] = useState([]);
@@ -14,32 +15,53 @@ const TypingBox = () => {
     const [timeLeft, setTimeLeft] = useState(30);
     const [isSessionActive, setIsSessionActive] = useState(false);
     const [skippedCount, setSkippedCount] = useState(0);
+    const [allWords, setAllWords] = useState([]);               
+    const [currentChunkIndex, setCurrentChunkIndex] = useState(0);
+    const [chunkIndex, setChunkIndex] = useState(0);
     const inputRef = useRef(null);
 
 
-    const loadWordBatch = () => {
+    const loadInitialWords = async () => {
       setIsLoading(true);
-      loadWords()
-        .then((words) => {
-          const maxStart = Math.max(0, words.length - 50);
-          const randomStart = Math.floor(Math.random() * maxStart);
-          const selected = words.slice(randomStart, randomStart + 50);
-  
-          setWordList(selected);
-          setWordStatus(new Array(50).fill(null));
-          setActiveWordIndex(0);
-          setTypedInput("");
-          setIsLoading(false);
-        })
-        .catch((err) => {
-          console.error("Error loading words.txt:", err);
-          setIsLoading(false);
-        });
+      try {
+        const words = await loadWords();
+        const shuffled = [...words];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        const selected = shuffled.slice(0, 1000); 
+        setAllWords(selected);
+        setWordList(selected.slice(0, 50));
+        setWordStatus(new Array(50).fill(null));
+        setActiveWordIndex(0);
+        setTypedInput("");
+        setCurrentChunkIndex(0);
+      } catch (err) {
+        console.error("Error loading words:", err);
+      } finally {
+        setIsLoading(false);
+      }
     };
-
+    
+    
     useEffect(() => {
-        loadWordBatch();
-    }, []);
+      loadInitialWords();
+    }, []);    
+
+    const showNextChunk = () => {
+      const nextIndex = (chunkIndex + 1) % (allWords.length / 50); // wrap around
+      const start = nextIndex * 50;
+      const end = start + 50;
+      const nextChunk = allWords.slice(start, end);
+    
+      setWordList(nextChunk);
+      setWordStatus(new Array(50).fill(null));
+      setActiveWordIndex(0);
+      setTypedInput("");
+      setChunkIndex(nextIndex);
+    };
+    
 
 
       useEffect(() => {
@@ -92,7 +114,6 @@ const TypingBox = () => {
     
         const prevIndex = activeWordIndex - 1;
     
-        // Prevent backspace if previous word was correct
         if (prevIndex >= 0 && wordStatus[prevIndex] === "correct") {
           e.preventDefault();
           return;
@@ -103,7 +124,6 @@ const TypingBox = () => {
           setActiveWordIndex(prevIndex);
           setTypedInput(typedHistory[prevIndex] || "");
     
-          // Clear statuses for words ahead
           const updatedStatus = [...wordStatus];
           for (let i = prevIndex + 1; i < updatedStatus.length; i++) {
             updatedStatus[i] = null;
@@ -115,25 +135,34 @@ const TypingBox = () => {
     
 
 const evaluateWord = (input) => {
-  if (activeWordIndex >= wordList.length - 1) {
-    setIsLoading(true);
-    loadWordBatch();
+  if (activeWordIndex + 1 === wordList.length) {
+    const nextChunkIndex = currentChunkIndex + 1;
+    const start = nextChunkIndex * 50;
+    const end = start + 50;
+  
+    if (start < allWords.length) {
+      setCurrentChunkIndex(nextChunkIndex);
+      setWordList(allWords.slice(start, end));
+      setWordStatus(new Array(50).fill(null));
+      setActiveWordIndex(0);
+      setTypedHistory([]);
+      setTypedInput("");
+    }
     return;
   }
 
   const currentWord = wordList[activeWordIndex];
   const isCorrect = input === currentWord;
 
-  // Prevent skipping more than 2 words
   if (!isCorrect && input === "") {
-    if (skippedCount === 0) {
-      return; // Block further skipping
+    if (skippedCount >= 0) {
+      return; 
     }
     setSkippedCount(skippedCount + 1);
   }
 
   if (isCorrect) {
-    setSkippedCount(0); // Reset on correct word
+    setSkippedCount(0); 
   }
 
   const updatedStatus = [...wordStatus];
@@ -238,6 +267,33 @@ const evaluateWord = (input) => {
         aria-label='Typing Input'
       />
 
+    <div className="mt-8 flex justify-center">
+      <button
+        onClick={showNextChunk}
+        disabled={isSessionActive}
+        className="px-8 py-3 bg-gradient-to-r from-cyan-400 to-cyan-600 text-black font-semibold text-base rounded-xl shadow-lg hover:from-cyan-300 hover:to-cyan-500 hover:shadow-cyan-400/40 hover:scale-105 transition-all duration-200"
+      >
+        ↺
+      </button>
+    </div>
+
+
+      {!isSessionActive && timeLeft === 0 && (
+        <ResultsModal
+          wordStatus={wordStatus}
+          selectedTime={selectedTime}
+          onRestart={() => {
+            loadInitialWords();
+            setWordStatus([]);
+            setTypedHistory([]);
+            setSkippedCount(0);
+            setIsSessionActive(false);
+            setIsInputFocused(true);
+            setTimeLeft(selectedTime);
+          }}
+        />
+      )}
+      
     </div>
   )
 }
