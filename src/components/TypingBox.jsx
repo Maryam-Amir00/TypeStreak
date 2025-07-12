@@ -8,7 +8,6 @@ const TypingBox = () => {
     const [typedInput, setTypedInput] = useState('');
     const [activeWordIndex, setActiveWordIndex] = useState(0);
     const [wordStatus, setWordStatus] = useState([]);
-    const [hasJumpedBack, setHasJumpedBack] = useState(false);
     const [isInputFocused, setIsInputFocused] = useState(true);
     const [typedHistory, setTypedHistory] = useState([]);
     const [selectedTime, setSelectedTime] = useState(30); 
@@ -68,40 +67,46 @@ const TypingBox = () => {
         setTimeLeft(selectedTime);
       }, [selectedTime]);
 
-    const handleInputChange = (e) => {
+      const handleInputChange = (e) => {
       let value = e.target.value;
-      value = value.replace(/\s+$/, ' ');
       setTypedInput(value);
-      setHasJumpedBack(false);
 
-      if(!isSessionActive && timeLeft > 0){
+      if (!isSessionActive && timeLeft > 0) {
         setIsSessionActive(true);
       }
 
-      if(value.endsWith(" ") && value.trim().length > 0){
-        evaluateWord(value.trim());
+      if (value.endsWith(" ")) {
+        const trimmed = value.trim();
+        evaluateWord(trimmed);
+        setTypedInput("");
       }
     };
 
+
     const handleKeyDown = (e) => {
-      if (
-        e.key === "Backspace" &&
-        typedInput.length === 0 &&
-        activeWordIndex > 0 &&
-        !hasJumpedBack
-      ) {
-        const prevIndex = activeWordIndex - 1;
-        setActiveWordIndex(prevIndex);
-        setTypedInput(typedHistory[prevIndex] || "");
-        setHasJumpedBack(true);
-  
-        const updatedStatus = [...wordStatus];
-        for (let i = prevIndex + 1; i < updatedStatus.length; i++) {
-          updatedStatus[i] = null;
+      if (e.key === "Backspace") {
+        if (typedInput.length > 0) {
+          return;
         }
-        setWordStatus(updatedStatus);
+
+        if (activeWordIndex > 0) {
+          e.preventDefault();
+        }
+        if (activeWordIndex > 0) {
+          const prevIndex = activeWordIndex - 1;
+          setActiveWordIndex(prevIndex);
+          setTypedInput(typedHistory[prevIndex] || "");
+    
+          // Clear statuses for words ahead
+          const updatedStatus = [...wordStatus];
+          for (let i = prevIndex + 1; i < updatedStatus.length; i++) {
+            updatedStatus[i] = null;
+          }
+          setWordStatus(updatedStatus);
+        }
       }
     };
+    
     
     
 
@@ -111,22 +116,22 @@ const TypingBox = () => {
         loadWordBatch();
         return;
       }
+
       const currentWord = wordList[activeWordIndex];
-      if (input.length !== currentWord.length) {
-        return;
-      }
       const isCorrect = input === currentWord;
+    
       const updatedStatus = [...wordStatus];
       updatedStatus[activeWordIndex] = isCorrect ? "correct" : "incorrect";
       setWordStatus(updatedStatus);
-
+    
       const updatedTypedHistory = [...typedHistory];
-      updatedTypedHistory[activeWordIndex] = input; 
+      updatedTypedHistory[activeWordIndex] = input;
       setTypedHistory(updatedTypedHistory);
-
-      setTypedInput("");
+    
       setActiveWordIndex((prevIndex) => prevIndex + 1);
     };
+    
+    
     
 
     const getWordClass = (index) => {

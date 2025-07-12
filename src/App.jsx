@@ -1,6 +1,5 @@
-import { useState } from 'react'
+import React from 'react'
 import TypingBox from './components/TypingBox'
-import TimerPanel from './components/TimerPanel'
 
 
 function App() {
