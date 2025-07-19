@@ -209,12 +209,12 @@ const evaluateWord = (input) => {
       <div className="min-h-screen bg-[#11131a] text-white font-mono px-4 sm:px-8 py-10">
         <div className="max-w-5xl mx-auto flex flex-col gap-10">
     
-          {/* Header */}
+          
           <h1 className="text-center text-4xl sm:text-5xl font-extrabold tracking-wide text-cyan-400 drop-shadow-lg">
             TypeStreak
           </h1>
     
-          {/* Timer Panel - clean, glowing, no border */}
+         
           <TimerPanel
           selectedTime={selectedTime}
           setSelectedTime={setSelectedTime}
@@ -225,7 +225,7 @@ const evaluateWord = (input) => {
           <OptionSelector options={options} setOptions={setOptions} />
 
     
-          {/* Typing Box - glowing effect */}
+          
           <div
             className="bg-[#1b1e2c] p-6 sm:p-8 rounded-2xl ring-1 ring-cyan-500/10 hover:ring-cyan-400/30 transition-all duration-200 min-h-[200px] tracking-wide cursor-text"
             onClick={() => inputRef.current?.focus()}
@@ -258,7 +258,7 @@ const evaluateWord = (input) => {
             )}
           </div>
     
-          {/* Hidden Input */}
+       
           <input
             type="text"
             className="absolute opacity-0 pointer-events-none"
@@ -271,7 +271,6 @@ const evaluateWord = (input) => {
             disabled={isLoading}
           />
     
-          {/* Load More Words Button */}
           <div className="flex justify-center">
           <button
             onClick={showNextChunk}
@@ -281,8 +280,7 @@ const evaluateWord = (input) => {
             ↺ Load New Words
           </button>
         </div>
-    
-          {/* Results Modal */}
+        
           {!isSessionActive && timeLeft === 0 && (
           <ResultsModal
             wordStatus={wordStatus}
