@@ -1,19 +1,16 @@
 export function mutateWords(words, options) {
-    const probability = 0.3;
+    const probability = 0.15;   
   
     return words.flatMap(word => {
       let modified = word;
       const output = [];
   
-      if (options.capitalization) {
-        const capType = Math.random() > probability ? 'upper' : 'first';
-        modified = capType === 'upper'
-          ? modified.toUpperCase()
-          : modified.charAt(0).toUpperCase() + modified.slice(1);
-      }
+      if (options.capitalization && Math.random() < probability) {
+        modified = modified.charAt(0).toUpperCase() + modified.slice(1).toLowerCase();
+      }     
   
-      if (options.punctuation && Math.random() < probability) {
-        const punct = ['!','.', ','];
+      if (options.punctuation && Math.random() < 0.08) {
+        const punct = ['!','.', ',', '?'];
         modified += punct[Math.floor(Math.random() * punct.length)];
       }
   
