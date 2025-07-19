@@ -1,4 +1,3 @@
-// src/components/OptionSelector.jsx
 import React from 'react';
 
 const OptionSelector = ({ options, setOptions }) => {
