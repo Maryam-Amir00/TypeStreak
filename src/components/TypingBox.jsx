@@ -2,6 +2,8 @@ import React, {useState , useEffect , useRef} from 'react'
 import { loadWords } from '../utils/loadWords'
 import TimerPanel from './TimerPanel';
 import ResultsModal from './ResultsModal';
+import OptionSelector from './OptionSelector';
+import { mutateWords } from '../utils/mutateWords';
 
 const TypingBox = () => {
     const [wordList , setWordList] = useState([]);
@@ -17,7 +19,12 @@ const TypingBox = () => {
     const [skippedCount, setSkippedCount] = useState(0);
     const [allWords, setAllWords] = useState([]);               
     const [currentChunkIndex, setCurrentChunkIndex] = useState(0);
-    const [chunkIndex, setChunkIndex] = useState(0);
+    const [options, setOptions] = useState({
+      capitalization: false,
+      punctuation: false,
+      numbers: false,
+      symbols: false
+    });    
     const inputRef = useRef(null);
 
 
@@ -30,7 +37,8 @@ const TypingBox = () => {
           const j = Math.floor(Math.random() * (i + 1));
           [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
         }
-        const selected = shuffled.slice(0, 1000); 
+        const mutated = mutateWords(shuffled, options); 
+        const selected = mutated.slice(0, 1000);
         setAllWords(selected);
         setWordList(selected.slice(0, 50));
         setWordStatus(new Array(50).fill(null));
@@ -47,10 +55,10 @@ const TypingBox = () => {
     
     useEffect(() => {
       loadInitialWords();
-    }, []);    
+    }, [options]);    
 
     const showNextChunk = () => {
-      const nextIndex = (chunkIndex + 1) % (allWords.length / 50); // wrap around
+      const nextIndex = (currentChunkIndex + 1) % Math.ceil(allWords.length / 50);
       const start = nextIndex * 50;
       const end = start + 50;
       const nextChunk = allWords.slice(start, end);
@@ -59,10 +67,9 @@ const TypingBox = () => {
       setWordStatus(new Array(50).fill(null));
       setActiveWordIndex(0);
       setTypedInput("");
-      setChunkIndex(nextIndex);
-    };
-    
-
+      setTypedHistory([]);
+      setCurrentChunkIndex(nextIndex);
+    };    
 
       useEffect(() => {
         if (wordList.length > 0 && inputRef.current) {
@@ -198,104 +205,106 @@ const evaluateWord = (input) => {
       return index === activeWordIndex ? typedInput : typedHistory[index] || ''
     }
 
-  return (
-    <div className="max-w-4xl mx-auto p-3 sm:p-4 md:p-6 font-mono">
-      <h1 className="text-2xl font-bold mb-4 text-center text-cyan-400">
-        TypeStreak
-      </h1>
-
-      <TimerPanel
-        selectedTime={selectedTime}
-        setSelectedTime={setSelectedTime}
-        timeLeft={timeLeft}
-        isSessionActive={isSessionActive}
-      />
-
-      <div
-        className="bg-[#252526] text-[#d4d4d4] border border-[#333] p-6 rounded-lg shadow-md min-h-[150px] leading-relaxed text-sm sm:text-base md:text-lg cursor-text"
-        onClick={() => inputRef.current.focus()}
-      >
-        {isLoading ? (
-          <p className="text-gray-500">Loading words...</p>
-        ) : (
-          <div className="flex flex-wrap gap-x-2">
-            {wordList.map((word, index) => {
-              
-              if (index === activeWordIndex) {
-                const inputForWord = getInputForWord(index);
-                return (
-                  <span key={index} className={getWordClass(index)}>
-                    {word.split("").map((char, i) => {
-                      const typedChar = inputForWord[i];
-                      return (
-                        <span key={i} className={getCharClass(char, typedChar)}>
-                          {char}
-                        </span>
-                      );
-                    })}
-                    
-                    {inputForWord.length > word.length && (
-                      <span className="text-red-400">
-                        {inputForWord.slice(word.length)}
-                      </span>
-                    )}
-                  </span>
-                );
-              }
-
-              
-              return (
-                <span key={index} className={getWordClass(index)}>
-                  {word}
-                </span>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      <input
-        type="text"
-        className="opacity-0 absolute"
-        ref={inputRef}
-        value={typedInput}
-        onChange={handleInputChange}
-        onKeyDown={handleKeyDown}
-        onFocus={() => setIsInputFocused(true)}
-        onBlur={() => setIsInputFocused(false)}
-        disabled={isLoading}
-        aria-label='Typing Input'
-      />
-
-    <div className="mt-8 flex justify-center">
-      <button
-        onClick={showNextChunk}
-        disabled={isSessionActive}
-        className="px-8 py-3 bg-gradient-to-r from-cyan-400 to-cyan-600 text-black font-semibold text-base rounded-xl shadow-lg hover:from-cyan-300 hover:to-cyan-500 hover:shadow-cyan-400/40 hover:scale-105 transition-all duration-200"
-      >
-        ↺
-      </button>
-    </div>
-
-
-      {!isSessionActive && timeLeft === 0 && (
-        <ResultsModal
-          wordStatus={wordStatus}
+    return (
+      <div className="min-h-screen bg-[#11131a] text-white font-mono px-4 sm:px-8 py-10">
+        <div className="max-w-5xl mx-auto flex flex-col gap-10">
+    
+          {/* Header */}
+          <h1 className="text-center text-4xl sm:text-5xl font-extrabold tracking-wide text-cyan-400 drop-shadow-lg">
+            TypeStreak
+          </h1>
+    
+          {/* Timer Panel - clean, glowing, no border */}
+          <TimerPanel
           selectedTime={selectedTime}
-          onRestart={() => {
-            loadInitialWords();
-            setWordStatus([]);
-            setTypedHistory([]);
-            setSkippedCount(0);
-            setIsSessionActive(false);
-            setIsInputFocused(true);
-            setTimeLeft(selectedTime);
-          }}
+          setSelectedTime={setSelectedTime}
+          timeLeft={timeLeft}
+          isSessionActive={isSessionActive}
         />
-      )}
-      
-    </div>
-  )
+
+          <OptionSelector options={options} setOptions={setOptions} />
+
+    
+          {/* Typing Box - glowing effect */}
+          <div
+            className="bg-[#1b1e2c] p-6 sm:p-8 rounded-2xl ring-1 ring-cyan-500/10 hover:ring-cyan-400/30 transition-all duration-200 min-h-[200px] tracking-wide cursor-text"
+            onClick={() => inputRef.current?.focus()}
+          >
+            {isLoading ? (
+              <p className="text-slate-500 italic animate-pulse">Loading...</p>
+            ) : (
+              <div className="flex flex-wrap gap-x-3 gap-y-4">
+                {wordList.map((word, index) => {
+                  const isActive = index === activeWordIndex;
+                  const inputForWord = getInputForWord(index);
+    
+                  return (
+                    <span key={index} className={getWordClass(index)}>
+                      {word.split('').map((char, i) => {
+                        const typedChar = inputForWord[i];
+                        return (
+                          <span key={i} className={getCharClass(char, typedChar)}>
+                            {char}
+                          </span>
+                        );
+                      })}
+                      {inputForWord.length > word.length && (
+                        <span className="text-red-500">{inputForWord.slice(word.length)}</span>
+                      )}
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+    
+          {/* Hidden Input */}
+          <input
+            type="text"
+            className="absolute opacity-0 pointer-events-none"
+            ref={inputRef}
+            value={typedInput}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
+            onFocus={() => setIsInputFocused(true)}
+            onBlur={() => setIsInputFocused(false)}
+            disabled={isLoading}
+          />
+    
+          {/* Load More Words Button */}
+          <div className="flex justify-center">
+          <button
+            onClick={showNextChunk}
+            disabled={isSessionActive}
+            className="px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-cyan-700 text-white font-semibold tracking-wide shadow-md transition-all duration-200 hover:from-cyan-400 hover:to-cyan-600 hover:shadow-cyan-500/40 hover:scale-105 disabled:opacity-50"
+          >
+            ↺ Load New Words
+          </button>
+        </div>
+    
+          {/* Results Modal */}
+          {!isSessionActive && timeLeft === 0 && (
+          <ResultsModal
+            wordStatus={wordStatus}
+            selectedTime={selectedTime}
+            onRestart={() => {
+              loadInitialWords();
+              setWordStatus([]);
+              setTypedHistory([]);
+              setSkippedCount(0);
+              setIsSessionActive(false);
+              setIsInputFocused(true);
+              setTimeLeft(selectedTime);
+              setTypedInput("");
+              setCurrentChunkIndex(0);
+            }}            
+          />
+        )}
+        </div>
+      </div>
+    );
+    
+    
 }
 
 export default TypingBox
