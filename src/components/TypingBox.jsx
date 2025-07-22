@@ -5,9 +5,9 @@ import ResultsModal from './ResultsModal';
 import OptionSelector from './OptionSelector';
 import { mutateWords } from '../utils/mutateWords';
 
+
 const TypingBox = () => {
     const [wordList , setWordList] = useState([]);
-    const [isLoading , setIsLoading] = useState(true);
     const [typedInput, setTypedInput] = useState('');
     const [activeWordIndex, setActiveWordIndex] = useState(0);
     const [wordStatus, setWordStatus] = useState([]);
@@ -27,10 +27,11 @@ const TypingBox = () => {
       symbols: false
     });    
     const inputRef = useRef(null);
+    const optionsKey = Object.values(options).join("-");
+
 
 
     const loadInitialWords = async () => {
-      setIsLoading(true);
       try {
         const words = await loadWords();
         const shuffled = [...words];
@@ -49,10 +50,8 @@ const TypingBox = () => {
         setCurrentChunkIndex(0);
       } catch (err) {
         console.error("Error loading words:", err);
-      } finally {
-        setIsLoading(false);
       }
-    };
+    };    
     
     
     useEffect(() => {
@@ -60,17 +59,10 @@ const TypingBox = () => {
     }, []);    
 
     useEffect(() => {
-      if (rawWords.length === 0) return;
-    
-      const mutated = mutateWords(rawWords, options);
-      const selected = mutated.slice(0, 1000);
-      setAllWords(selected);
-      setWordList(selected.slice(0, 50));
-      setWordStatus(new Array(50).fill(null));
-      setActiveWordIndex(0);
-      setTypedInput("");
-      setCurrentChunkIndex(0);
-    }, [options]);
+      if (!isSessionActive) {
+        loadInitialWords();
+      }
+    }, [options]);    
     
       const showNextChunk = () => {
       const nextIndex = (currentChunkIndex + 1) % Math.ceil(allWords.length / 50);
@@ -237,9 +229,12 @@ const evaluateWord = (input) => {
           isSessionActive={isSessionActive}
         />
 
-          <OptionSelector options={options} setOptions={(newOptions) => {
-            if (!isSessionActive) setOptions(newOptions);
-          }} />
+          <OptionSelector
+            options={options}
+            setOptions={(newOptions) => {
+              if (!isSessionActive) setOptions(newOptions);
+            }}
+          />
 
 
     
@@ -248,21 +243,14 @@ const evaluateWord = (input) => {
             className="bg-[#1b1e2c] p-6 sm:p-8 rounded-2xl ring-1 ring-cyan-500/10 hover:ring-cyan-400/30 transition-all duration-200 min-h-[200px] tracking-wide cursor-text"
             onClick={() => inputRef.current?.focus()}
           >
-            {isLoading ? (
-                <div className="flex flex-wrap gap-3 animate-pulse text-slate-600 select-none">
-                  {Array.from({ length: 30 }).map((_, i) => (
-                    <span
-                      key={i}
-                      className="bg-slate-700/40 h-6 w-[60px] rounded-md"
-                    ></span>
-                  ))}
-                </div>
-              ) : (
-              <div className="flex flex-wrap gap-x-3 gap-y-4">
+            <div
+                key={currentChunkIndex + '-' + optionsKey}
+                className="flex flex-wrap gap-x-3 gap-y-4 animate-fadeIn transition-opacity duration-300"
+              >
                 {wordList.map((word, index) => {
                   const isActive = index === activeWordIndex;
                   const inputForWord = getInputForWord(index);
-    
+
                   return (
                     <span key={index} className={getWordClass(index)}>
                       {word.split('').map((char, i) => {
@@ -280,7 +268,6 @@ const evaluateWord = (input) => {
                   );
                 })}
               </div>
-            )}
           </div>
     
        
@@ -293,7 +280,6 @@ const evaluateWord = (input) => {
             onKeyDown={handleKeyDown}
             onFocus={() => setIsInputFocused(true)}
             onBlur={() => setIsInputFocused(false)}
-            disabled={isLoading}
           />
     
           <div className="flex justify-center">
