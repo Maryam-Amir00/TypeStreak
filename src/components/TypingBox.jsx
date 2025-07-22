@@ -59,9 +59,20 @@ const TypingBox = () => {
     }, []);    
 
     useEffect(() => {
-      if (!isSessionActive) {
-        loadInitialWords();
-      }
+      if (rawWords.length === 0 || isSessionActive) return;
+
+      const start = Math.floor(Math.random() * (rawWords.length - 1000));
+      const chunk = rawWords.slice(start, start + 1000);
+      const mutated = mutateWords(chunk, options);
+      const selected = mutated.slice(0, 1000);
+
+      setAllWords(selected);
+      setWordList(selected.slice(0, 50));
+      setWordStatus(new Array(50).fill(null));
+      setTypedInput('');
+      setTypedHistory([]);
+      setActiveWordIndex(0);
+      setCurrentChunkIndex(0);
     }, [options]);    
     
       const showNextChunk = () => {
@@ -190,7 +201,6 @@ const evaluateWord = (input) => {
   setActiveWordIndex((prevIndex) => prevIndex + 1);
 };
 
-    
     
     
 
