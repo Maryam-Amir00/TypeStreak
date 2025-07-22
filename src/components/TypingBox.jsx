@@ -19,6 +19,7 @@ const TypingBox = () => {
     const [skippedCount, setSkippedCount] = useState(0);
     const [allWords, setAllWords] = useState([]);               
     const [currentChunkIndex, setCurrentChunkIndex] = useState(0);
+    const [rawWords, setRawWords] = useState([]);
     const [options, setOptions] = useState({
       capitalization: false,
       punctuation: false,
@@ -37,7 +38,8 @@ const TypingBox = () => {
           const j = Math.floor(Math.random() * (i + 1));
           [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
         }
-        const mutated = mutateWords(shuffled, options); 
+        setRawWords(shuffled); 
+        const mutated = mutateWords(shuffled, options);
         const selected = mutated.slice(0, 1000);
         setAllWords(selected);
         setWordList(selected.slice(0, 50));
@@ -55,9 +57,22 @@ const TypingBox = () => {
     
     useEffect(() => {
       loadInitialWords();
-    }, [options]);    
+    }, []);    
 
-    const showNextChunk = () => {
+    useEffect(() => {
+      if (rawWords.length === 0) return;
+    
+      const mutated = mutateWords(rawWords, options);
+      const selected = mutated.slice(0, 1000);
+      setAllWords(selected);
+      setWordList(selected.slice(0, 50));
+      setWordStatus(new Array(50).fill(null));
+      setActiveWordIndex(0);
+      setTypedInput("");
+      setCurrentChunkIndex(0);
+    }, [options]);
+    
+      const showNextChunk = () => {
       const nextIndex = (currentChunkIndex + 1) % Math.ceil(allWords.length / 50);
       const start = nextIndex * 50;
       const end = start + 50;
@@ -222,7 +237,10 @@ const evaluateWord = (input) => {
           isSessionActive={isSessionActive}
         />
 
-          <OptionSelector options={options} setOptions={setOptions} />
+          <OptionSelector options={options} setOptions={(newOptions) => {
+            if (!isSessionActive) setOptions(newOptions);
+          }} />
+
 
     
           
@@ -231,8 +249,15 @@ const evaluateWord = (input) => {
             onClick={() => inputRef.current?.focus()}
           >
             {isLoading ? (
-              <p className="text-slate-500 italic animate-pulse">Loading...</p>
-            ) : (
+                <div className="flex flex-wrap gap-3 animate-pulse text-slate-600 select-none">
+                  {Array.from({ length: 30 }).map((_, i) => (
+                    <span
+                      key={i}
+                      className="bg-slate-700/40 h-6 w-[60px] rounded-md"
+                    ></span>
+                  ))}
+                </div>
+              ) : (
               <div className="flex flex-wrap gap-x-3 gap-y-4">
                 {wordList.map((word, index) => {
                   const isActive = index === activeWordIndex;
