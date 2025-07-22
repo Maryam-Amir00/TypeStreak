@@ -5,7 +5,6 @@ import ResultsModal from './ResultsModal';
 import OptionSelector from './OptionSelector';
 import { mutateWords } from '../utils/mutateWords';
 
-
 const TypingBox = () => {
     const [wordList , setWordList] = useState([]);
     const [typedInput, setTypedInput] = useState('');
@@ -26,13 +25,13 @@ const TypingBox = () => {
       numbers: false,
       symbols: false
     });    
+    const [isLoading, setIsLoading] = useState(true); // ✅ ADDED HERE
     const inputRef = useRef(null);
     const optionsKey = Object.values(options).join("-");
 
-
-
     const loadInitialWords = async () => {
       try {
+        setIsLoading(true); // ✅ START LOADING
         const words = await loadWords();
         const shuffled = [...words];
         for (let i = shuffled.length - 1; i > 0; i--) {
@@ -48,11 +47,11 @@ const TypingBox = () => {
         setActiveWordIndex(0);
         setTypedInput("");
         setCurrentChunkIndex(0);
+        setIsLoading(false); // ✅ STOP LOADING
       } catch (err) {
         console.error("Error loading words:", err);
       }
     };    
-    
     
     useEffect(() => {
       loadInitialWords();
@@ -75,7 +74,7 @@ const TypingBox = () => {
       setCurrentChunkIndex(0);
     }, [options]);    
     
-      const showNextChunk = () => {
+    const showNextChunk = () => {
       const nextIndex = (currentChunkIndex + 1) % Math.ceil(allWords.length / 50);
       const start = nextIndex * 50;
       const end = start + 50;
@@ -89,33 +88,33 @@ const TypingBox = () => {
       setCurrentChunkIndex(nextIndex);
     };    
 
-      useEffect(() => {
-        if (wordList.length > 0 && inputRef.current) {
-          inputRef.current.focus();
-        }
-      }, [wordList]);
-  
-      useEffect(() => {
-        if(!isSessionActive) return;
+    useEffect(() => {
+      if (wordList.length > 0 && inputRef.current) {
+        inputRef.current.focus();
+      }
+    }, [wordList]);
 
-        if(timeLeft === 0){
-          setIsSessionActive(false);
-          setIsInputFocused(false);
-          return;
-        }
+    useEffect(() => {
+      if(!isSessionActive) return;
 
-        const timerId = setInterval(() => {
-          setTimeLeft((prev) => prev - 1);
-        }, 1000);
+      if(timeLeft === 0){
+        setIsSessionActive(false);
+        setIsInputFocused(false);
+        return;
+      }
 
-        return () => clearInterval(timerId);
-      }, [isSessionActive, timeLeft]);
+      const timerId = setInterval(() => {
+        setTimeLeft((prev) => prev - 1);
+      }, 1000);
 
-      useEffect(() => {
-        setTimeLeft(selectedTime);
-      }, [selectedTime]);
+      return () => clearInterval(timerId);
+    }, [isSessionActive, timeLeft]);
 
-      const handleInputChange = (e) => {
+    useEffect(() => {
+      setTimeLeft(selectedTime);
+    }, [selectedTime]);
+
+    const handleInputChange = (e) => {
       let value = e.target.value;
       setTypedInput(value);
 
@@ -129,7 +128,6 @@ const TypingBox = () => {
         setTypedInput("");
       }
     };
-
 
     const handleKeyDown = (e) => {
       if (e.key === "Backspace") {
@@ -158,51 +156,47 @@ const TypingBox = () => {
       }
     };    
     
+    const evaluateWord = (input) => {
+      if (activeWordIndex + 1 === wordList.length) {
+        const nextChunkIndex = currentChunkIndex + 1;
+        const start = nextChunkIndex * 50;
+        const end = start + 50;
+      
+        if (start < allWords.length) {
+          setCurrentChunkIndex(nextChunkIndex);
+          setWordList(allWords.slice(start, end));
+          setWordStatus(new Array(50).fill(null));
+          setActiveWordIndex(0);
+          setTypedHistory([]);
+          setTypedInput("");
+        }
+        return;
+      }
 
-const evaluateWord = (input) => {
-  if (activeWordIndex + 1 === wordList.length) {
-    const nextChunkIndex = currentChunkIndex + 1;
-    const start = nextChunkIndex * 50;
-    const end = start + 50;
-  
-    if (start < allWords.length) {
-      setCurrentChunkIndex(nextChunkIndex);
-      setWordList(allWords.slice(start, end));
-      setWordStatus(new Array(50).fill(null));
-      setActiveWordIndex(0);
-      setTypedHistory([]);
-      setTypedInput("");
-    }
-    return;
-  }
+      const currentWord = wordList[activeWordIndex];
+      const isCorrect = input === currentWord;
 
-  const currentWord = wordList[activeWordIndex];
-  const isCorrect = input === currentWord;
+      if (!isCorrect && input === "") {
+        if (skippedCount >= 0) {
+          return; 
+        }
+        setSkippedCount(skippedCount + 1);
+      }
 
-  if (!isCorrect && input === "") {
-    if (skippedCount >= 0) {
-      return; 
-    }
-    setSkippedCount(skippedCount + 1);
-  }
+      if (isCorrect) {
+        setSkippedCount(0); 
+      }
 
-  if (isCorrect) {
-    setSkippedCount(0); 
-  }
+      const updatedStatus = [...wordStatus];
+      updatedStatus[activeWordIndex] = isCorrect ? "correct" : "incorrect";
+      setWordStatus(updatedStatus);
 
-  const updatedStatus = [...wordStatus];
-  updatedStatus[activeWordIndex] = isCorrect ? "correct" : "incorrect";
-  setWordStatus(updatedStatus);
+      const updatedTypedHistory = [...typedHistory];
+      updatedTypedHistory[activeWordIndex] = input;
+      setTypedHistory(updatedTypedHistory);
 
-  const updatedTypedHistory = [...typedHistory];
-  updatedTypedHistory[activeWordIndex] = input;
-  setTypedHistory(updatedTypedHistory);
-
-  setActiveWordIndex((prevIndex) => prevIndex + 1);
-};
-
-    
-    
+      setActiveWordIndex((prevIndex) => prevIndex + 1);
+    };
 
     const getWordClass = (index) => {
       if (index === activeWordIndex && isInputFocused) return "border-b border-cyan-400";
@@ -210,7 +204,6 @@ const evaluateWord = (input) => {
       if (wordStatus[index] === "incorrect") return "text-red-400";
       return "text-gray-300";
     };
-    
 
     const getCharClass = (char, typedChar) => {
       if (!typedChar) return "";
@@ -222,22 +215,28 @@ const evaluateWord = (input) => {
       return index === activeWordIndex ? typedInput : typedHistory[index] || ''
     }
 
+    if (isLoading) {
+      return (
+        <div className="flex items-center justify-center h-[80vh]">
+          <div className="w-10 h-10 border-4 border-cyan-400 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-screen bg-[#11131a] text-white font-mono px-4 sm:px-8 py-10">
         <div className="max-w-5xl mx-auto flex flex-col gap-10">
     
-          
           <h1 className="text-center text-4xl sm:text-5xl font-extrabold tracking-wide text-cyan-400 drop-shadow-lg">
             TypeStreak
           </h1>
     
-         
           <TimerPanel
-          selectedTime={selectedTime}
-          setSelectedTime={setSelectedTime}
-          timeLeft={timeLeft}
-          isSessionActive={isSessionActive}
-        />
+            selectedTime={selectedTime}
+            setSelectedTime={setSelectedTime}
+            timeLeft={timeLeft}
+            isSessionActive={isSessionActive}
+          />
 
           <OptionSelector
             options={options}
@@ -245,42 +244,38 @@ const evaluateWord = (input) => {
               if (!isSessionActive) setOptions(newOptions);
             }}
           />
-
-
     
-          
           <div
             className="bg-[#1b1e2c] p-6 sm:p-8 rounded-2xl ring-1 ring-cyan-500/10 hover:ring-cyan-400/30 transition-all duration-200 min-h-[200px] tracking-wide cursor-text"
             onClick={() => inputRef.current?.focus()}
           >
             <div
-                key={currentChunkIndex + '-' + optionsKey}
-                className="flex flex-wrap gap-x-3 gap-y-4 animate-fadeIn transition-opacity duration-300"
-              >
-                {wordList.map((word, index) => {
-                  const isActive = index === activeWordIndex;
-                  const inputForWord = getInputForWord(index);
+              key={currentChunkIndex + '-' + optionsKey}
+              className="flex flex-wrap gap-x-3 gap-y-4 animate-fadeIn transition-opacity duration-300"
+            >
+              {wordList.map((word, index) => {
+                const isActive = index === activeWordIndex;
+                const inputForWord = getInputForWord(index);
 
-                  return (
-                    <span key={index} className={getWordClass(index)}>
-                      {word.split('').map((char, i) => {
-                        const typedChar = inputForWord[i];
-                        return (
-                          <span key={i} className={getCharClass(char, typedChar)}>
-                            {char}
-                          </span>
-                        );
-                      })}
-                      {inputForWord.length > word.length && (
-                        <span className="text-red-500">{inputForWord.slice(word.length)}</span>
-                      )}
-                    </span>
-                  );
-                })}
-              </div>
+                return (
+                  <span key={index} className={getWordClass(index)}>
+                    {word.split('').map((char, i) => {
+                      const typedChar = inputForWord[i];
+                      return (
+                        <span key={i} className={getCharClass(char, typedChar)}>
+                          {char}
+                        </span>
+                      );
+                    })}
+                    {inputForWord.length > word.length && (
+                      <span className="text-red-500">{inputForWord.slice(word.length)}</span>
+                    )}
+                  </span>
+                );
+              })}
+            </div>
           </div>
     
-       
           <input
             type="text"
             className="absolute opacity-0 pointer-events-none"
@@ -293,37 +288,35 @@ const evaluateWord = (input) => {
           />
     
           <div className="flex justify-center">
-          <button
-            onClick={showNextChunk}
-            disabled={isSessionActive}
-            className="px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-cyan-700 text-white font-semibold tracking-wide shadow-md transition-all duration-200 hover:from-cyan-400 hover:to-cyan-600 hover:shadow-cyan-500/40 hover:scale-105 disabled:opacity-50"
-          >
-            ↺ Load New Words
-          </button>
-        </div>
+            <button
+              onClick={showNextChunk}
+              disabled={isSessionActive}
+              className="px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-cyan-700 text-white font-semibold tracking-wide shadow-md transition-all duration-200 hover:from-cyan-400 hover:to-cyan-600 hover:shadow-cyan-500/40 hover:scale-105 disabled:opacity-50"
+            >
+              ↺ Load New Words
+            </button>
+          </div>
         
           {!isSessionActive && timeLeft === 0 && (
-          <ResultsModal
-            wordStatus={wordStatus}
-            selectedTime={selectedTime}
-            onRestart={() => {
-              loadInitialWords();
-              setWordStatus([]);
-              setTypedHistory([]);
-              setSkippedCount(0);
-              setIsSessionActive(false);
-              setIsInputFocused(true);
-              setTimeLeft(selectedTime);
-              setTypedInput("");
-              setCurrentChunkIndex(0);
-            }}            
-          />
-        )}
+            <ResultsModal
+              wordStatus={wordStatus}
+              selectedTime={selectedTime}
+              onRestart={() => {
+                loadInitialWords();
+                setWordStatus([]);
+                setTypedHistory([]);
+                setSkippedCount(0);
+                setIsSessionActive(false);
+                setIsInputFocused(true);
+                setTimeLeft(selectedTime);
+                setTypedInput("");
+                setCurrentChunkIndex(0);
+              }}            
+            />
+          )}
         </div>
       </div>
     );
-    
-    
 }
 
 export default TypingBox
