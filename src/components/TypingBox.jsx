@@ -308,7 +308,7 @@ const TypingBox = () => {
             </div>
           </div>
     
-          {/* Hidden Input */}
+          
           <input
             type="text"
             className="absolute opacity-0 pointer-events-none"
@@ -320,7 +320,7 @@ const TypingBox = () => {
             onBlur={() => setIsInputFocused(false)}
           />
     
-          {/* ↺ Button */}
+          
           {!isSessionActive && (
             <div className="flex justify-center">
               <button
@@ -333,7 +333,7 @@ const TypingBox = () => {
             </div>
           )}
     
-          {/* Results Modal */}
+          
           {!isSessionActive && timeLeft === 0 && (
             <ResultsModal
               wordStatus={wordStatus}
