@@ -1,5 +1,5 @@
 import React from "react";
-import { MdAccessTime } from "react-icons/md";
+
 
 const TimerPanel = ({ selectedTime, setSelectedTime, timeLeft, isSessionActive }) => {
   const timeOptions = [20, 30, 45, 60, 90, 120];
@@ -27,18 +27,6 @@ const TimerPanel = ({ selectedTime, setSelectedTime, timeLeft, isSessionActive }
             {time}s
           </button>
         ))}
-      </div>
-
-      <div className="text-gray-300 flex items-center gap-2 text-base sm:text-lg">
-        <MdAccessTime className="text-xl text-cyan-400" />
-        <span className="font-light">Time Left:</span>
-        <span
-          className={`font-semibold tracking-wide ${
-            timeLeft <= 10 ? "text-red-400 animate-pulse" : "text-cyan-300"
-          }`}
-        >
-          {timeLeft}s
-        </span>
       </div>
 
     </div>
