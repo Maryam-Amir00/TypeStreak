@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTheme } from '../context/ThemeContext';
-import { colorClasses } from '../utils/colorClasses'; // adjust path as needed
+import { colorClasses } from '../utils/colorClasses'; 
 
 const OptionSelector = ({ options, setOptions }) => {
   const toggleOption = (key) => {
@@ -18,7 +18,7 @@ const OptionSelector = ({ options, setOptions }) => {
   ];
 
   const { primaryColor } = useTheme();
-  const colors = colorClasses[primaryColor] || colorClasses.cyan; // fallback if undefined
+  const colors = colorClasses[primaryColor] || colorClasses.cyan; 
 
   return (
     <div className="flex justify-center flex-wrap gap-3 mt-4">
