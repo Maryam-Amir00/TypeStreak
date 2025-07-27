@@ -1,7 +1,12 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
+import { useTheme } from '../context/ThemeContext';
+import { colorClasses } from '../utils/colorClasses';
 
 const ResultsModal = ({ wordStatus, selectedTime, onRestart }) => {
+  const { primaryColor } = useTheme();
+  const themeColors = colorClasses[primaryColor] || colorClasses["cyan"];
+
   const totalWords = wordStatus.filter((w) => w !== null).length;
   const correctWords = wordStatus.filter((w) => w === "correct").length;
 
@@ -10,16 +15,16 @@ const ResultsModal = ({ wordStatus, selectedTime, onRestart }) => {
   const targetAccuracy = 98;
 
   const getAccuracyColor = () =>
-    accuracy >= targetAccuracy ? "text-green-400" : "text-cyan-400";
+    accuracy >= targetAccuracy ? "text-green-400" : themeColors.text;
 
   const getSpeedColor = () =>
-    wpm >= 40 ? "text-green-400" : "text-cyan-400";
+    wpm >= 40 ? "text-green-400" : themeColors.text;
 
   const modal = (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-center z-50">
       <div
-        className="bg-[#0f172a]/90 border border-cyan-400/20 text-white p-8 md:p-10 rounded-3xl shadow-[0_12px_48px_rgba(0,0,0,0.45)] w-[90%] max-w-md text-center space-y-8 relative 
-        transition duration-300 ease-out transform scale-95 opacity-0 animate-[fadeAndScaleIn_0.3s_ease-out_forwards]"
+        className={`bg-[#0f172a]/90 border ${themeColors.border}/20 text-white p-8 md:p-10 rounded-3xl shadow-[0_12px_48px_rgba(0,0,0,0.45)] w-[90%] max-w-md text-center space-y-8 relative 
+        transition duration-300 ease-out transform scale-95 opacity-0 animate-[fadeAndScaleIn_0.3s_ease-out_forwards]`}
       >
         <button
           onClick={onRestart}
@@ -30,7 +35,7 @@ const ResultsModal = ({ wordStatus, selectedTime, onRestart }) => {
         </button>
 
         <div className="space-y-1">
-          <h2 className="text-3xl font-bold text-cyan-400 tracking-tight drop-shadow-sm">
+          <h2 className={`text-3xl font-bold ${themeColors.text} tracking-tight drop-shadow-sm`}>
             Session Summary
           </h2>
           <p className="text-sm text-gray-400">Review your performance!</p>
@@ -55,7 +60,7 @@ const ResultsModal = ({ wordStatus, selectedTime, onRestart }) => {
         <div className="pt-4">
           <button
             onClick={onRestart}
-            className="w-full bg-gradient-to-r from-cyan-400 to-cyan-500 hover:from-cyan-300 hover:to-cyan-500 hover:shadow-cyan-400/40 hover:scale-[1.03] text-black py-3 rounded-xl font-semibold tracking-wide shadow-xl transition-all duration-200"
+            className={`w-full bg-gradient-to-r ${themeColors.from} ${themeColors.to} hover:brightness-110 hover:scale-[1.03] text-black py-3 rounded-xl font-semibold tracking-wide shadow-xl transition-all duration-200 ${themeColors.shadow}`}
           >
             Try Again ↺
           </button>
