@@ -34,7 +34,7 @@ const OptionSelector = ({ options, setOptions }) => {
               relative px-4 py-2 min-w-[60px] rounded-full text-sm font-semibold tracking-wide
               transition-all duration-300 border focus:outline-none
               ${isActive
-                ? `${colors.text} ${colors.bg} ${colors.border} ${colors.shadow}`
+                ? `text-white ${colors.bg} ${colors.border} ${colors.shadow}`
                 : `bg-[#1a1c24] ${colors.text} border-[#2b2e3a] hover:bg-[#2b2f3f] hover:text-white`
               }
             `}
