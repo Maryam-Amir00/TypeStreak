@@ -1,24 +1,33 @@
-import React from 'react';
-import ReactDOM from 'react-dom';
-import { useTheme } from '../context/ThemeContext';
-import { colorClasses } from '../utils/colorClasses';
+import React from "react";
+import ReactDOM from "react-dom";
+import { useTheme } from "../context/ThemeContext.js";
+import { colorClasses } from "../utils/colorClasses.js";
+import type { ColorStyle } from "../utils/colorClasses.js";
 
-const ResultsModal = ({ wordStatus, selectedTime, onRestart }) => {
+type WordStatus = "correct" | "incorrect" | null;
+
+interface ResultsModalProps {
+  wordStatus: WordStatus[];            
+  selectedTime: number;                
+  onRestart: () => void;               
+}
+
+const ResultsModal: React.FC<ResultsModalProps> = ({ wordStatus, selectedTime, onRestart }) => {
   const { primaryColor } = useTheme();
-  const themeColors = colorClasses[primaryColor] || colorClasses["cyan"];
+  const themeColors: ColorStyle = (colorClasses[primaryColor] ?? colorClasses["cyan"]) as ColorStyle;
 
   const totalWords = wordStatus.filter((w) => w !== null).length;
   const correctWords = wordStatus.filter((w) => w === "correct").length;
 
-  const accuracy = totalWords === 0 ? 0 : ((correctWords / totalWords) * 100).toFixed(1);
+  const accuracy = totalWords === 0 ? "0.0" : ((correctWords / totalWords) * 100).toFixed(1);
   const wpm = ((correctWords / selectedTime) * 60).toFixed(1);
   const targetAccuracy = 98;
 
-  const getAccuracyColor = () =>
-    accuracy >= targetAccuracy ? "text-green-400" : themeColors.text;
+  const getAccuracyColor = (): string =>
+    parseFloat(accuracy) >= targetAccuracy ? "text-green-400" : themeColors.text;
 
-  const getSpeedColor = () =>
-    wpm >= 40 ? "text-green-400" : themeColors.text;
+  const getSpeedColor = (): string =>
+    parseFloat(wpm) >= 40 ? "text-green-400" : themeColors.text;
 
   const modal = (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-center z-50">
@@ -69,7 +78,12 @@ const ResultsModal = ({ wordStatus, selectedTime, onRestart }) => {
     </div>
   );
 
-  return ReactDOM.createPortal(modal, document.getElementById('modal-root'));
+  const modalRoot = document.getElementById("modal-root");
+  if (!modalRoot) {
+    throw new Error("Modal root element not found");
+  }
+
+  return ReactDOM.createPortal(modal, modalRoot);
 };
 
 export default ResultsModal;

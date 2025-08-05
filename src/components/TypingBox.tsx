@@ -1,53 +1,54 @@
 import React, { useState, useEffect, useRef } from "react";
-import { loadWords } from "../utils/loadWords";
-import TimerPanel from "./TimerPanel";
-import ResultsModal from "./ResultsModal";
-import OptionSelector from "./OptionSelector";
-import { mutateWords } from "../utils/mutateWords";
+import { loadWords } from "../utils/loadWords.js";
+import TimerPanel from "./TimerPanel.js";
+import ResultsModal from "./ResultsModal.js";
+import OptionSelector from "./OptionSelector.js";
+import { mutateWords } from "../utils/mutateWords.js";
 import { MdAccessTime } from "react-icons/md";
-import ThemeIcon from "./ThemeIcon";
-import { useTheme } from "../context/ThemeContext";
-import { colorClasses } from "../utils/colorClasses";
+import ThemeIcon from "./ThemeIcon.js";
+import { useTheme } from "../context/ThemeContext.js";
+import { colorClasses } from "../utils/colorClasses.js";
+import type { OptionsType } from "./OptionSelector.js";
 
 const CHUNK_SIZE = 30;
 
 const TypingBox = () => {
-  const [wordList, setWordList] = useState([]);
-  const [typedInput, setTypedInput] = useState("");
-  const [activeWordIndex, setActiveWordIndex] = useState(0);
-  const [wordStatus, setWordStatus] = useState([]);
-  const [isInputFocused, setIsInputFocused] = useState(true);
-  const [typedHistory, setTypedHistory] = useState([]);
-  const [selectedTime, setSelectedTime] = useState(30);
-  const [timeLeft, setTimeLeft] = useState(30);
-  const [isSessionActive, setIsSessionActive] = useState(false);
-  const [skippedCount, setSkippedCount] = useState(0);
-  const [allWords, setAllWords] = useState([]);
-  const [currentChunkIndex, setCurrentChunkIndex] = useState(0);
-  const [rawWords, setRawWords] = useState([]);
-  const [options, setOptions] = useState({
+  const [wordList, setWordList] = useState<string[]>([]);
+  const [typedInput, setTypedInput] = useState<string>("");
+  const [activeWordIndex, setActiveWordIndex] = useState<number>(0);
+  const [wordStatus, setWordStatus] = useState<("correct" | "incorrect" | null)[]>([]);
+  const [isInputFocused, setIsInputFocused] = useState<boolean>(true);
+  const [typedHistory, setTypedHistory] = useState<string[]>([]);
+  const [selectedTime, setSelectedTime] = useState<number>(30);
+  const [timeLeft, setTimeLeft] = useState<number>(30);
+  const [isSessionActive, setIsSessionActive] = useState<boolean>(false);
+  const [skippedCount, setSkippedCount] = useState<number>(0);
+  const [allWords, setAllWords] = useState<string[]>([]);
+  const [currentChunkIndex, setCurrentChunkIndex] = useState<number>(0);
+  const [rawWords, setRawWords] = useState<string[]>([]);
+  const [options, setOptions] = useState<OptionsType>({
     capitalization: false,
     punctuation: false,
     numbers: false,
     symbols: false,
   });
-  const [isLoading, setIsLoading] = useState(true);
-  const inputRef = useRef(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const inputRef = useRef<HTMLInputElement | null>(null);
   const { primaryColor } = useTheme();
-  const optionsKey = Object.values(options).join("-");
+  const optionsKey: string = Object.values(options).join("-");
 
-  const loadInitialWords = async () => {
+  const loadInitialWords = async (): Promise<void> => {
     try {
       setIsLoading(true);
-      const words = await loadWords();
-      const shuffled = [...words];
-      for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      const words: string[] = await loadWords();
+      const shuffled: string[] = [...words];
+      for (let i: number = shuffled.length - 1; i > 0; i--) {
+        const j: number = Math.floor(Math.random() * (i + 1));
+        [shuffled[i]!, shuffled[j]!] = [shuffled[j]!, shuffled[i]!];
       }
       setRawWords(shuffled);
-      const mutated = mutateWords(shuffled, options);
-      const selected = mutated.slice(0, 5000);
+      const mutated: string[] = mutateWords(shuffled, options);
+      const selected: string[] = mutated.slice(0, 5000);
       setAllWords(selected);
       setWordList(selected.slice(0, CHUNK_SIZE));
       setWordStatus(new Array(CHUNK_SIZE).fill(null));
@@ -60,17 +61,17 @@ const TypingBox = () => {
     }
   };
 
-  useEffect(() => {
+  useEffect((): void => {
     loadInitialWords();
   }, []);
 
-  useEffect(() => {
+  useEffect((): void => {
     if (rawWords.length === 0 || isSessionActive) return;
 
-    const start = Math.floor(Math.random() * (rawWords.length - 5000));
-    const chunk = rawWords.slice(start, start + 5000);
-    const mutated = mutateWords(chunk, options);
-    const selected = mutated.slice(0, 5000);
+    const start: number = Math.floor(Math.random() * (rawWords.length - 5000));
+    const chunk: string[] = rawWords.slice(start, start + 5000);
+    const mutated: string[] = mutateWords(chunk, options);
+    const selected: string[] = mutated.slice(0, 5000);
 
     setAllWords(selected);
     setWordList(selected.slice(0, CHUNK_SIZE));
@@ -81,12 +82,12 @@ const TypingBox = () => {
     setCurrentChunkIndex(0);
   }, [options]);
 
-  const showNextChunk = () => {
-    const nextIndex =
+  const showNextChunk = (): void => {
+    const nextIndex: number =
       (currentChunkIndex + 1) % Math.ceil(allWords.length / CHUNK_SIZE);
-    const start = nextIndex * CHUNK_SIZE;
-    const end = start + CHUNK_SIZE;
-    const nextChunk = allWords.slice(start, end);
+    const start: number = nextIndex * CHUNK_SIZE;
+    const end: number = start + CHUNK_SIZE;
+    const nextChunk: string[] = allWords.slice(start, end);
 
     setWordList(nextChunk);
     setWordStatus(new Array(CHUNK_SIZE).fill(null));
@@ -96,13 +97,13 @@ const TypingBox = () => {
     setCurrentChunkIndex(nextIndex);
   };
 
-  useEffect(() => {
+  useEffect((): void => {
     if (wordList.length > 0 && inputRef.current) {
       inputRef.current.focus();
     }
   }, [wordList]);
 
-  useEffect(() => {
+  useEffect((): void | (() => void) => {
     if (!isSessionActive) return;
 
     if (timeLeft === 0) {
@@ -111,19 +112,19 @@ const TypingBox = () => {
       return;
     }
 
-    const timerId = setInterval(() => {
-      setTimeLeft((prev) => prev - 1);
+    const timerId: number = setInterval(() => {
+      setTimeLeft((prev: number) => prev - 1);
     }, 1000);
 
-    return () => clearInterval(timerId);
+    return (): void => clearInterval(timerId);
   }, [isSessionActive, timeLeft]);
 
-  useEffect(() => {
+  useEffect((): void => {
     setTimeLeft(selectedTime);
   }, [selectedTime]);
 
-  const handleInputChange = (e) => {
-    let value = e.target.value;
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+    let value: string = e.target.value;
     setTypedInput(value);
 
     if (!isSessionActive && timeLeft > 0) {
@@ -131,19 +132,19 @@ const TypingBox = () => {
     }
 
     if (value.endsWith(" ")) {
-      const trimmed = value.trim();
+      const trimmed: string = value.trim();
       evaluateWord(trimmed);
       setTypedInput("");
     }
   };
 
-  const handleKeyDown = (e) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>): void => {
     if (e.key === "Backspace") {
       if (typedInput.length > 0) {
         return;
       }
 
-      const prevIndex = activeWordIndex - 1;
+      const prevIndex: number = activeWordIndex - 1;
 
       if (prevIndex >= 0 && wordStatus[prevIndex] === "correct") {
         e.preventDefault();
@@ -155,7 +156,7 @@ const TypingBox = () => {
         setActiveWordIndex(prevIndex);
         setTypedInput(typedHistory[prevIndex] || "");
 
-        const updatedStatus = [...wordStatus];
+        const updatedStatus: ("correct" | "incorrect" | null)[] = [...wordStatus];
         for (let i = prevIndex + 1; i < updatedStatus.length; i++) {
           updatedStatus[i] = null;
         }
@@ -164,11 +165,11 @@ const TypingBox = () => {
     }
   };
 
-  const evaluateWord = (input) => {
+  const evaluateWord = (input: string): void => {
     if (activeWordIndex + 1 === wordList.length) {
-      const nextChunkIndex = currentChunkIndex + 1;
-      const start = nextChunkIndex * CHUNK_SIZE;
-      const end = start + CHUNK_SIZE;
+      const nextChunkIndex: number = currentChunkIndex + 1;
+      const start: number = nextChunkIndex * CHUNK_SIZE;
+      const end: number = start + CHUNK_SIZE;
 
       if (start < allWords.length) {
         setCurrentChunkIndex(nextChunkIndex);
@@ -181,8 +182,8 @@ const TypingBox = () => {
       return;
     }
 
-    const currentWord = wordList[activeWordIndex];
-    const isCorrect = input === currentWord;
+    const currentWord: string = wordList[activeWordIndex]!;
+    const isCorrect: boolean = input === currentWord;
 
     if (!isCorrect && input === "") {
       if (skippedCount >= 0) {
@@ -195,20 +196,20 @@ const TypingBox = () => {
       setSkippedCount(0);
     }
 
-    const updatedStatus = [...wordStatus];
+    const updatedStatus: ("correct" | "incorrect" | null)[] = [...wordStatus];
     updatedStatus[activeWordIndex] = isCorrect ? "correct" : "incorrect";
     setWordStatus(updatedStatus);
 
-    const updatedTypedHistory = [...typedHistory];
+    const updatedTypedHistory: string[] = [...typedHistory];
     updatedTypedHistory[activeWordIndex] = input;
     setTypedHistory(updatedTypedHistory);
 
-    setActiveWordIndex((prevIndex) => prevIndex + 1);
+    setActiveWordIndex((prevIndex: number) => prevIndex + 1);
   };
 
-  const getWordClass = (index) => {
+  const getWordClass = (index: number): string => {
     if (index === activeWordIndex && isInputFocused)
-      return `border-b ${colorClasses[primaryColor].border}`;
+      return `border-b ${colorClasses[primaryColor]?.border}`;
     if (wordStatus[index] === "correct") return "text-white";
     if (wordStatus[index] === "incorrect") {
       return "border-b border-red-400";
@@ -216,13 +217,13 @@ const TypingBox = () => {
     return "text-gray-600";
   };
 
-  const getCharClass = (char, typedChar) => {
+  const getCharClass = (char: string, typedChar: string): string => {
     if (!typedChar) return "text-gray-600";
     if (char === typedChar) return "text-white";
     return "text-red-400";
   };
 
-  const getInputForWord = (index) => {
+  const getInputForWord = (index: number): string => {
     return index === activeWordIndex ? typedInput : typedHistory[index] || "";
   };
 
@@ -263,7 +264,7 @@ const TypingBox = () => {
                   <div className="flex-1">
                     <OptionSelector
                       options={options}
-                      setOptions={(newOptions) => {
+                      setOptions={(newOptions: React.SetStateAction<typeof options>) => {
                         if (!isSessionActive) setOptions(newOptions);
                       }}
                     />
@@ -276,7 +277,7 @@ const TypingBox = () => {
 
         <div
           className="relative min-h-[140px] text-[1.6rem] sm:text-[2rem] leading-[2.6rem] tracking-wide font-medium text-gray-600 cursor-text outline-none pt-4"
-          onClick={() => inputRef.current?.focus()}
+          onClick={(): void => inputRef.current?.focus()}
         >
           {isSessionActive && (
             <div className="absolute -top-8 left-0 text-gray-300 flex items-center gap-2 text-base sm:text-lg">
@@ -297,14 +298,14 @@ const TypingBox = () => {
             key={currentChunkIndex + "-" + optionsKey}
             className="flex flex-wrap gap-x-3 gap-y-4 animate-fadeIn transition-opacity duration-300"
           >
-            {wordList.map((word, index) => {
-              const isActive = index === activeWordIndex;
-              const inputForWord = getInputForWord(index);
+            {wordList.map((word: string, index: number) => {
+              const isActive: boolean = index === activeWordIndex;
+              const inputForWord: string = getInputForWord(index);
 
               return (
                 <span key={index} className={getWordClass(index)}>
-                  {word.split("").map((char, i) => {
-                    const typedChar = inputForWord[i];
+                  {word.split("").map((char: string, i: number) => {
+                    const typedChar: string = inputForWord[i]!;
                     return (
                       <span key={i} className={getCharClass(char, typedChar)}>
                         {char}
@@ -329,14 +330,14 @@ const TypingBox = () => {
           value={typedInput}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
-          onFocus={() => setIsInputFocused(true)}
-          onBlur={() => setIsInputFocused(false)}
+          onFocus={(): void => setIsInputFocused(true)}
+          onBlur={(): void => setIsInputFocused(false)}
         />
 
         {!isSessionActive && (
           <div className="flex justify-center">
             <button
-              onClick={showNextChunk}
+              onClick={(): void => showNextChunk()}
               disabled={isSessionActive}
               className={`px-6 py-3 rounded-xl bg-gradient-to-r ${colorClasses[primaryColor]?.from} ${colorClasses[primaryColor]?.to} text-white font-semibold tracking-wide shadow-md transition-all duration-200 hover:scale-105 hover:brightness-110 disabled:opacity-50`}
             >
@@ -349,8 +350,8 @@ const TypingBox = () => {
           <ResultsModal
             wordStatus={wordStatus}
             selectedTime={selectedTime}
-            onRestart={() => {
-              const nextIndex =
+            onRestart={(): void => {
+              const nextIndex: number =
                 (currentChunkIndex + 1) %
                 Math.ceil(allWords.length / CHUNK_SIZE);
               const start = nextIndex * CHUNK_SIZE;

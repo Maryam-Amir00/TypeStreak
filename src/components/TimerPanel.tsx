@@ -1,11 +1,28 @@
 import React from "react";
-import { useTheme } from "../context/ThemeContext";
-import { colorClasses } from "../utils/colorClasses"; 
+import { useTheme } from "../context/ThemeContext.js";
+import { colorClasses } from "../utils/colorClasses.js";
+import type { ColorStyle } from "../utils/colorClasses.js"; 
 
-const TimerPanel = ({ selectedTime, setSelectedTime, timeLeft, isSessionActive }) => {
-  const timeOptions = [20, 30, 45, 60, 90, 120];
+
+interface TimerPanelProps {
+  selectedTime: number;
+  setSelectedTime: React.Dispatch<React.SetStateAction<number>>;
+  timeLeft: number;
+  isSessionActive: boolean;
+}
+
+const TimerPanel: React.FC<TimerPanelProps> = ({
+  selectedTime,
+  setSelectedTime,
+  timeLeft,
+  isSessionActive,
+}) => {
+  const timeOptions: number[] = [20, 30, 45, 60, 90, 120];
+
   const { primaryColor } = useTheme();
-  const color = colorClasses[primaryColor] || colorClasses["cyan"];
+
+  
+  const color: ColorStyle = colorClasses[primaryColor] ?? colorClasses["cyan"] as ColorStyle;
 
   return (
     <div className="flex flex-col sm:flex-row justify-between items-center text-sm sm:text-base gap-4 mb-6">

@@ -1,6 +1,6 @@
 import React from "react";
-import TypingBox from "./components/TypingBox";
-import { ThemeProvider } from "./context/ThemeContext";
+import TypingBox from "./components/TypingBox.js";
+import { ThemeProvider } from "./context/ThemeContext.js";
 
 function App() {
   return (

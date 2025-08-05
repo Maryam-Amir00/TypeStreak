@@ -1,32 +1,42 @@
 import React, { useState } from "react";
-import { useTheme } from "../context/ThemeContext";
+import { useTheme } from "../context/ThemeContext.js";
 import { FaPalette } from "react-icons/fa";
 
-const colors = [
-  "cyan",
-  "teal",
-  "yellow",
-  "purple",
-  "pink",
-  "blue",
-  "rose",
-  "emerald",
-];
+type Color =
+  | "cyan"
+  | "teal"
+  | "yellow"
+  | "purple"
+  | "pink"
+  | "blue"
+  | "rose"
+  | "emerald";
 
-const ThemeIcon = () => {
-  const { primaryColor, setPrimaryColor } = useTheme();
-  const [open, setOpen] = useState(false);
-  const tailwindColors = {
+  const colors: Color[] = [
+    "cyan",
+    "teal",
+    "yellow",
+    "purple",
+    "pink",
+    "blue",
+    "rose",
+    "emerald",
+  ];
+
+  const tailwindColors: Record<Color, string> = {
     cyan: "#22d3ee",
     teal: "#14b8a6",
     yellow: "#eab308",
     purple: "#a855f7",
-    orange: "#f97316",
     pink: "#ec4899",
     blue: "#3b82f6",
     rose: "#fb7185",
     emerald: "#10b981",
   };
+
+const ThemeIcon: React.FC = () => {
+  const { primaryColor, setPrimaryColor } = useTheme();
+  const [open, setOpen] = useState(false);
 
   const toggleDropdown = () => {
     setOpen((prev) => !prev);
