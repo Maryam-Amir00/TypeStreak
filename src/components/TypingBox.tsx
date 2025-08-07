@@ -112,7 +112,7 @@ const TypingBox = () => {
       return;
     }
 
-    const timerId: number = setInterval(() => {
+    const timerId = setInterval(() => {
       setTimeLeft((prev: number) => prev - 1);
     }, 1000);
 
