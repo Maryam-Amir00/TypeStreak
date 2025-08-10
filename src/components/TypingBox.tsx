@@ -16,7 +16,9 @@ const TypingBox = () => {
   const [wordList, setWordList] = useState<string[]>([]);
   const [typedInput, setTypedInput] = useState<string>("");
   const [activeWordIndex, setActiveWordIndex] = useState<number>(0);
-  const [wordStatus, setWordStatus] = useState<("correct" | "incorrect" | null)[]>([]);
+  const [wordStatus, setWordStatus] = useState<
+    ("correct" | "incorrect" | null)[]
+  >([]);
   const [isInputFocused, setIsInputFocused] = useState<boolean>(true);
   const [typedHistory, setTypedHistory] = useState<string[]>([]);
   const [selectedTime, setSelectedTime] = useState<number>(30);
@@ -156,7 +158,9 @@ const TypingBox = () => {
         setActiveWordIndex(prevIndex);
         setTypedInput(typedHistory[prevIndex] || "");
 
-        const updatedStatus: ("correct" | "incorrect" | null)[] = [...wordStatus];
+        const updatedStatus: ("correct" | "incorrect" | null)[] = [
+          ...wordStatus,
+        ];
         for (let i = prevIndex + 1; i < updatedStatus.length; i++) {
           updatedStatus[i] = null;
         }
@@ -230,7 +234,9 @@ const TypingBox = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-[80vh]">
-        <div className={`w-10 h-10 border-4 ${colorClasses[primaryColor]?.border} border-t-transparent rounded-full animate-spin`}></div>
+        <div
+          className={`w-10 h-10 border-4 ${colorClasses[primaryColor]?.border} border-t-transparent rounded-full animate-spin`}
+        ></div>
       </div>
     );
   }
@@ -238,15 +244,17 @@ const TypingBox = () => {
   return (
     <div className="min-h-screen bg-[#11131a] text-white font-mono px-4 sm:px-8 py-10">
       {!isSessionActive && (
-      <div className="absolute top-4 right-4">
-        <ThemeIcon />
-      </div>
-  )}
+        <div className="absolute top-4 right-4">
+          <ThemeIcon />
+        </div>
+      )}
       <div className="max-w-5xl mx-auto flex flex-col gap-10 relative">
         <div className="min-h-[220px] flex flex-col gap-6 items-center justify-center">
           {!isSessionActive && (
             <>
-              <h1 className= {`text-center text-4xl sm:text-5xl font-extrabold tracking-wide ${colorClasses[primaryColor]?.text} drop-shadow-lg`}>
+              <h1
+                className={`text-center text-4xl sm:text-5xl font-extrabold tracking-wide ${colorClasses[primaryColor]?.text} drop-shadow-lg`}
+              >
                 TypeStreak
               </h1>
 
@@ -264,7 +272,9 @@ const TypingBox = () => {
                   <div className="flex-1">
                     <OptionSelector
                       options={options}
-                      setOptions={(newOptions: React.SetStateAction<typeof options>) => {
+                      setOptions={(
+                        newOptions: React.SetStateAction<typeof options>
+                      ) => {
                         if (!isSessionActive) setOptions(newOptions);
                       }}
                     />
@@ -281,12 +291,15 @@ const TypingBox = () => {
         >
           {isSessionActive && (
             <div className="absolute -top-8 left-0 text-gray-300 flex items-center gap-2 text-base sm:text-lg">
-              <MdAccessTime className={`text-xl ${colorClasses[primaryColor]?.text}`} />
+              <MdAccessTime
+                className={`text-xl ${colorClasses[primaryColor]?.text}`}
+              />
               <span
                 className={`font-semibold tracking-wide ${
                   timeLeft <= 10
                     ? "text-red-400 animate-pulse"
-                    : colorClasses[primaryColor]?.text}
+                    : colorClasses[primaryColor]?.text
+                }
                 }`}
               >
                 {timeLeft}s
