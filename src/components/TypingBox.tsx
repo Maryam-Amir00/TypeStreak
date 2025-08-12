@@ -9,6 +9,7 @@ import ThemeIcon from "./ThemeIcon.js";
 import { useTheme } from "../context/ThemeContext.js";
 import { colorClasses } from "../utils/colorClasses.js";
 import type { OptionsType } from "./OptionSelector.js";
+import NavBar from "./Navbar.js";
 
 const CHUNK_SIZE = 30;
 
@@ -252,11 +253,7 @@ const TypingBox = () => {
         <div className="min-h-[220px] flex flex-col gap-6 items-center justify-center">
           {!isSessionActive && (
             <>
-              <h1
-                className={`text-center text-4xl sm:text-5xl font-extrabold tracking-wide ${colorClasses[primaryColor]?.text} drop-shadow-lg`}
-              >
-                TypeStreak
-              </h1>
+              <NavBar />
 
               <div className="w-full mt-10">
                 <div className="w-full flex flex-col sm:flex-row justify-between items-baseline gap-4 px-2 sm:px-4">

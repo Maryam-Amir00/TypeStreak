@@ -44,6 +44,7 @@ const OptionSelector: React.FC<OptionSelectorProps> = ({ options, setOptions }) 
             key={key}
             onClick={() => toggleOption(key)}
             aria-pressed={isActive}
+            title={key}
             className={`
               relative px-4 py-2 min-w-[60px] rounded-full text-sm font-semibold tracking-wide
               transition-all duration-300 border focus:outline-none
