@@ -10,6 +10,8 @@ import { useTheme } from "../context/ThemeContext.js";
 import { colorClasses } from "../utils/colorClasses.js";
 import type { OptionsType } from "./OptionSelector.js";
 import NavBar from "./Navbar.js";
+import supabase from "../utils/supabaseClient.js";
+import { useAuth } from "../context/AuthContext.js";
 
 const CHUNK_SIZE = 30;
 
@@ -38,6 +40,7 @@ const TypingBox = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const { primaryColor } = useTheme();
+  const { user } = useAuth();
   const optionsKey: string = Object.values(options).join("-");
 
   const loadInitialWords = async (): Promise<void> => {
@@ -106,12 +109,98 @@ const TypingBox = () => {
     }
   }, [wordList]);
 
+  const calculateResults = () => {
+    const correctWordsCount = wordStatus.filter(
+      (status) => status === "correct"
+    ).length;
+    const totalTypedChars = typedHistory.join("").length;
+    const accuracy = ((correctWordsCount / wordStatus.length) * 100).toFixed(2);
+    const wpm = Math.round((correctWordsCount / selectedTime) * 60);
+
+    return {
+      wpm,
+      accuracy: parseFloat(accuracy),
+      correct_words: correctWordsCount,
+      total_typed_chars: totalTypedChars,
+      duration_seconds: selectedTime,
+    };
+  };
+
+  const saveResults = async () => {
+    if (!user) return;
+
+    const stats = calculateResults();
+    if (!stats) {
+      console.error("No stats calculated, skipping save");
+      return;
+    }
+
+    const newData = {
+      user_id: user.id,
+      wpm: stats.wpm,
+      accuracy: stats.accuracy,
+      correct_words: stats.correct_words,
+      total_typed_chars: stats.total_typed_chars,
+      duration_seconds: stats.duration_seconds,
+    };
+
+    try {
+      const { data: existingResult, error: fetchError } = await supabase
+        .from("results")
+        .select("*")
+        .eq("user_id", user.id)
+        .single();
+
+      if (fetchError && fetchError.code !== "PGRST116") {
+        console.error("Error fetching existing result:", fetchError);
+        return;
+      }
+
+      if (!existingResult) {
+        const { error: insertError } = await supabase
+          .from("results")
+          .insert([newData]);
+
+        if (insertError) {
+          console.error("Error inserting first result:", insertError);
+        } else {
+          console.log("First result saved successfully");
+        }
+      } else {
+        const isBetter =
+          stats.wpm > existingResult.wpm ||
+          (stats.wpm === existingResult.wpm &&
+            stats.accuracy > existingResult.accuracy);
+
+        if (isBetter) {
+          const { error: updateError } = await supabase
+            .from("results")
+            .update(newData)
+            .eq("user_id", user.id); // ✅ FIX HERE
+
+          if (updateError) {
+            console.error("Error updating result:", updateError);
+          } else {
+            console.log("Better result updated successfully");
+          }
+        } else {
+          console.log(
+            "New result is not better than existing best - skipping save"
+          );
+        }
+      }
+    } catch (err) {
+      console.error("Unexpected error during saveResults:", err);
+    }
+  };
+
   useEffect((): void | (() => void) => {
     if (!isSessionActive) return;
 
     if (timeLeft === 0) {
       setIsSessionActive(false);
       setIsInputFocused(false);
+      saveResults();
       return;
     }
 

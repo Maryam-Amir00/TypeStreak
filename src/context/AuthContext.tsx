@@ -6,7 +6,7 @@ type AuthContextType = {
   user: User | null;
   loading: boolean;
   isLoggedIn: boolean;
-  signUp: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, username: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
 };
@@ -38,10 +38,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     };
   }, []);
 
-  const signUp = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({ email, password });
+  const signUp = async (email: string, password: string, username: string) => {
+    const { data, error } = await supabase.auth.signUp({ email, password });
     if (error) throw new Error(error.message);
+  
+    const userId = data.user?.id; 
+    if (!userId) throw new Error("User ID not found after sign up.");
+  
+    const { error: insertError } = await supabase
+      .from("profiles")
+      .insert([{ id: userId, username }]); 
+    if (insertError) throw new Error(insertError.message);
   };
+  
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
