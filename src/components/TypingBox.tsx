@@ -176,7 +176,7 @@ const TypingBox = () => {
           const { error: updateError } = await supabase
             .from("results")
             .update(newData)
-            .eq("user_id", user.id); // ✅ FIX HERE
+            .eq("user_id", user.id); 
 
           if (updateError) {
             console.error("Error updating result:", updateError);
