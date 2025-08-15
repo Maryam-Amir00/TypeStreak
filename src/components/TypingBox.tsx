@@ -13,12 +13,12 @@ import NavBar from "./Navbar.js";
 import supabase from "../utils/supabaseClient.js";
 import { useAuth } from "../context/AuthContext.js";
 
-const CHUNK_SIZE = 30;
+const VISIBLE_WORD_COUNT = 60;
 
 const TypingBox = () => {
-  const [wordList, setWordList] = useState<string[]>([]);
   const [typedInput, setTypedInput] = useState<string>("");
   const [activeWordIndex, setActiveWordIndex] = useState<number>(0);
+  const [displayStart, setDisplayStart] = useState<number>(0);
   const [wordStatus, setWordStatus] = useState<
     ("correct" | "incorrect" | null)[]
   >([]);
@@ -29,8 +29,9 @@ const TypingBox = () => {
   const [isSessionActive, setIsSessionActive] = useState<boolean>(false);
   const [skippedCount, setSkippedCount] = useState<number>(0);
   const [allWords, setAllWords] = useState<string[]>([]);
-  const [currentChunkIndex, setCurrentChunkIndex] = useState<number>(0);
   const [rawWords, setRawWords] = useState<string[]>([]);
+  const [totalCorrectWords, setTotalCorrectWords] = useState<number>(0);
+  const [isLineShifting, setIsLineShifting] = useState<boolean>(false);
   const [options, setOptions] = useState<OptionsType>({
     capitalization: false,
     punctuation: false,
@@ -39,6 +40,7 @@ const TypingBox = () => {
   });
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const wordRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const { primaryColor } = useTheme();
   const { user } = useAuth();
   const optionsKey: string = Object.values(options).join("-");
@@ -46,22 +48,23 @@ const TypingBox = () => {
   const loadInitialWords = async (): Promise<void> => {
     try {
       setIsLoading(true);
-      const words: string[] = await loadWords();
-      const shuffled: string[] = [...words];
-      for (let i: number = shuffled.length - 1; i > 0; i--) {
-        const j: number = Math.floor(Math.random() * (i + 1));
+      const words = await loadWords();
+      const shuffled = [...words];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
         [shuffled[i]!, shuffled[j]!] = [shuffled[j]!, shuffled[i]!];
       }
+      const mutated = mutateWords(shuffled, options);
+      const selected = mutated.slice(0, 5000);
       setRawWords(shuffled);
-      const mutated: string[] = mutateWords(shuffled, options);
-      const selected: string[] = mutated.slice(0, 5000);
       setAllWords(selected);
-      setWordList(selected.slice(0, CHUNK_SIZE));
-      setWordStatus(new Array(CHUNK_SIZE).fill(null));
+      setWordStatus(new Array(5000).fill(null));
+      setTypedHistory(new Array(5000).fill(""));
       setActiveWordIndex(0);
       setTypedInput("");
-      setCurrentChunkIndex(0);
+      setTotalCorrectWords(0);
       setIsLoading(false);
+      setDisplayStart(0);
     } catch (err) {
       console.error("Error loading words:", err);
     }
@@ -80,47 +83,81 @@ const TypingBox = () => {
     const selected: string[] = mutated.slice(0, 5000);
 
     setAllWords(selected);
-    setWordList(selected.slice(0, CHUNK_SIZE));
-    setWordStatus(new Array(CHUNK_SIZE).fill(null));
     setTypedInput("");
     setTypedHistory([]);
     setActiveWordIndex(0);
-    setCurrentChunkIndex(0);
+    setWordStatus(new Array(5000).fill(null));
+    setTypedHistory(new Array(5000).fill(""));
+    setDisplayStart(0);
   }, [options]);
 
-  const showNextChunk = (): void => {
-    const nextIndex: number =
-      (currentChunkIndex + 1) % Math.ceil(allWords.length / CHUNK_SIZE);
-    const start: number = nextIndex * CHUNK_SIZE;
-    const end: number = start + CHUNK_SIZE;
-    const nextChunk: string[] = allWords.slice(start, end);
-
-    setWordList(nextChunk);
-    setWordStatus(new Array(CHUNK_SIZE).fill(null));
-    setActiveWordIndex(0);
-    setTypedInput("");
-    setTypedHistory([]);
-    setCurrentChunkIndex(nextIndex);
-  };
-
   useEffect((): void => {
-    if (wordList.length > 0 && inputRef.current) {
+    if (allWords.length > 0 && inputRef.current) {
       inputRef.current.focus();
     }
-  }, [wordList]);
+  }, [allWords]);
+
+  useEffect((): void | (() => void) => {
+    const calculateAndShiftLines = () => {
+      if (wordRefs.current.length === 0 || !wordRefs.current[0]) return;
+
+      const lines: number[][] = [];
+      let currentLine: number[] = [];
+      let prevTop: number | null = null;
+
+      wordRefs.current.forEach((el, idx) => {
+        if (!el) return;
+        const top = el.offsetTop;
+        if (prevTop !== null && top > prevTop + 5) {
+          lines.push(currentLine);
+          currentLine = [];
+        }
+        currentLine.push(idx);
+        prevTop = top;
+      });
+      if (currentLine.length > 0) lines.push(currentLine);
+
+      const activeRelative = activeWordIndex - displayStart;
+      if (activeRelative < 0 || activeRelative >= wordRefs.current.length)
+        return;
+
+      const activeLineIdx = lines.findIndex((line) =>
+        line.includes(activeRelative)
+      );
+
+      if (activeLineIdx > 0) {
+        let wordsToShift = 0;
+        for (let i = 0; i < activeLineIdx; i++) {
+          wordsToShift += lines[i]?.length || 0;
+        }
+        setIsLineShifting(true);
+        setTimeout(() => {
+          setDisplayStart((prev) => prev + wordsToShift);
+          setIsLineShifting(false);
+        }, 150);
+      }
+    };
+
+    const timer = setTimeout(calculateAndShiftLines, 0);
+    return () => clearTimeout(timer);
+  }, [activeWordIndex, displayStart, optionsKey]);
+
+  const getVisibleWords = (): string[] => {
+    return allWords.slice(displayStart, displayStart + VISIBLE_WORD_COUNT);
+  };
 
   const calculateResults = () => {
-    const correctWordsCount = wordStatus.filter(
-      (status) => status === "correct"
-    ).length;
-    const totalTypedChars = typedHistory.join("").length;
-    const accuracy = ((correctWordsCount / wordStatus.length) * 100).toFixed(2);
-    const wpm = Math.round((correctWordsCount / selectedTime) * 60);
+    const totalTypedChars = typedHistory.filter(Boolean).join("").length;
+    const accuracy = (
+      (totalCorrectWords / (totalCorrectWords + skippedCount)) *
+      100
+    ).toFixed(2);
+    const wpm = Math.round((totalTypedChars / 5 / selectedTime) * 60);
 
     return {
       wpm,
       accuracy: parseFloat(accuracy),
-      correct_words: correctWordsCount,
+      correct_words: totalCorrectWords,
       total_typed_chars: totalTypedChars,
       duration_seconds: selectedTime,
     };
@@ -176,7 +213,7 @@ const TypingBox = () => {
           const { error: updateError } = await supabase
             .from("results")
             .update(newData)
-            .eq("user_id", user.id); 
+            .eq("user_id", user.id);
 
           if (updateError) {
             console.error("Error updating result:", updateError);
@@ -194,22 +231,24 @@ const TypingBox = () => {
     }
   };
 
-  useEffect((): void | (() => void) => {
+  useEffect(() => {
     if (!isSessionActive) return;
 
-    if (timeLeft === 0) {
-      setIsSessionActive(false);
-      setIsInputFocused(false);
-      saveResults();
-      return;
-    }
-
     const timerId = setInterval(() => {
-      setTimeLeft((prev: number) => prev - 1);
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timerId);
+          setIsSessionActive(false);
+          setIsInputFocused(false);
+          saveResults();
+          return 0;
+        }
+        return prev - 1;
+      });
     }, 1000);
 
-    return (): void => clearInterval(timerId);
-  }, [isSessionActive, timeLeft]);
+    return () => clearInterval(timerId);
+  }, [isSessionActive]);
 
   useEffect((): void => {
     setTimeLeft(selectedTime);
@@ -260,24 +299,8 @@ const TypingBox = () => {
   };
 
   const evaluateWord = (input: string): void => {
-    if (activeWordIndex + 1 === wordList.length) {
-      const nextChunkIndex: number = currentChunkIndex + 1;
-      const start: number = nextChunkIndex * CHUNK_SIZE;
-      const end: number = start + CHUNK_SIZE;
-
-      if (start < allWords.length) {
-        setCurrentChunkIndex(nextChunkIndex);
-        setWordList(allWords.slice(start, end));
-        setWordStatus(new Array(CHUNK_SIZE).fill(null));
-        setActiveWordIndex(0);
-        setTypedHistory([]);
-        setTypedInput("");
-      }
-      return;
-    }
-
-    const currentWord: string = wordList[activeWordIndex]!;
-    const isCorrect: boolean = input === currentWord;
+    const currentWord = allWords[activeWordIndex];
+    const isCorrect = input === currentWord;
 
     if (!isCorrect && input === "") {
       if (skippedCount >= 0) {
@@ -288,6 +311,7 @@ const TypingBox = () => {
 
     if (isCorrect) {
       setSkippedCount(0);
+      setTotalCorrectWords((prev) => prev + 1);
     }
 
     const updatedStatus: ("correct" | "incorrect" | null)[] = [...wordStatus];
@@ -299,6 +323,20 @@ const TypingBox = () => {
     setTypedHistory(updatedTypedHistory);
 
     setActiveWordIndex((prevIndex: number) => prevIndex + 1);
+  };
+
+  const resetWithNewWords = (): void => {
+    const maxStart = Math.max(0, allWords.length - VISIBLE_WORD_COUNT);
+    const newStart = Math.floor(Math.random() * maxStart);
+    setDisplayStart(newStart);
+    setActiveWordIndex(newStart);
+    setTypedInput("");
+    setTypedHistory(new Array(5000).fill(""));
+    setWordStatus(new Array(5000).fill(null));
+    setSkippedCount(0);
+    setIsSessionActive(false);
+    setIsInputFocused(true);
+    setTimeLeft(selectedTime);
   };
 
   const getWordClass = (index: number): string => {
@@ -371,10 +409,7 @@ const TypingBox = () => {
           )}
         </div>
 
-        <div
-          className="relative min-h-[140px] text-[1.6rem] sm:text-[2rem] leading-[2.6rem] tracking-wide font-medium text-gray-600 cursor-text outline-none pt-4"
-          onClick={(): void => inputRef.current?.focus()}
-        >
+        <div className="relative">
           {isSessionActive && (
             <div className="absolute -top-8 left-0 text-gray-300 flex items-center gap-2 text-base sm:text-lg">
               <MdAccessTime
@@ -385,7 +420,6 @@ const TypingBox = () => {
                   timeLeft <= 10
                     ? "text-red-400 animate-pulse"
                     : colorClasses[primaryColor]?.text
-                }
                 }`}
               >
                 {timeLeft}s
@@ -394,31 +428,44 @@ const TypingBox = () => {
           )}
 
           <div
-            key={currentChunkIndex + "-" + optionsKey}
-            className="flex flex-wrap gap-x-3 gap-y-4 animate-fadeIn transition-opacity duration-300"
+            className="relative h-[170px] overflow-hidden text-[1.6rem] sm:text-[2rem] leading-[2.6rem] tracking-wide font-medium text-gray-600 cursor-text outline-none pt-2 rounded-md"
+            onClick={(): void => inputRef.current?.focus()}
           >
-            {wordList.map((word: string, index: number) => {
-              const isActive: boolean = index === activeWordIndex;
-              const inputForWord: string = getInputForWord(index);
+            <div
+              key={`typing-box-${optionsKey}`}
+              className={`flex flex-wrap gap-x-3 gap-y-4 animate-line-shift ${
+                isLineShifting ? "line-shifting" : ""
+              }`}
+            >
+              {getVisibleWords().map((word, index) => {
+                const globalIndex = displayStart + index;
+                const inputForWord = getInputForWord(globalIndex);
 
-              return (
-                <span key={index} className={getWordClass(index)}>
-                  {word.split("").map((char: string, i: number) => {
-                    const typedChar: string = inputForWord[i]!;
-                    return (
-                      <span key={i} className={getCharClass(char, typedChar)}>
-                        {char}
+                return (
+                  <span
+                    ref={(el) => {
+                      wordRefs.current[index] = el;
+                    }}
+                    key={globalIndex}
+                    className={getWordClass(globalIndex)}
+                  >
+                    {word.split("").map((char, i) => {
+                      const typedChar = inputForWord[i] || "";
+                      return (
+                        <span key={i} className={getCharClass(char, typedChar)}>
+                          {char}
+                        </span>
+                      );
+                    })}
+                    {inputForWord.length > word.length && (
+                      <span className="text-red-500">
+                        {inputForWord.slice(word.length)}
                       </span>
-                    );
-                  })}
-                  {inputForWord.length > word.length && (
-                    <span className="text-red-500">
-                      {inputForWord.slice(word.length)}
-                    </span>
-                  )}
-                </span>
-              );
-            })}
+                    )}
+                  </span>
+                );
+              })}
+            </div>
           </div>
         </div>
 
@@ -436,7 +483,7 @@ const TypingBox = () => {
         {!isSessionActive && (
           <div className="flex justify-center">
             <button
-              onClick={(): void => showNextChunk()}
+              onClick={resetWithNewWords}
               disabled={isSessionActive}
               className={`px-6 py-3 rounded-xl bg-gradient-to-r ${colorClasses[primaryColor]?.from} ${colorClasses[primaryColor]?.to} text-white font-semibold tracking-wide shadow-md transition-all duration-200 hover:scale-105 hover:brightness-110 disabled:opacity-50`}
             >
@@ -450,22 +497,16 @@ const TypingBox = () => {
             wordStatus={wordStatus}
             selectedTime={selectedTime}
             onRestart={(): void => {
-              const nextIndex: number =
-                (currentChunkIndex + 1) %
-                Math.ceil(allWords.length / CHUNK_SIZE);
-              const start = nextIndex * CHUNK_SIZE;
-              const end = start + CHUNK_SIZE;
-
-              setWordList(allWords.slice(start, end));
-              setWordStatus(new Array(CHUNK_SIZE).fill(null));
-              setTypedHistory([]);
+              resetWithNewWords();
+              setWordStatus(new Array(5000).fill(null));
+              setTypedHistory(new Array(5000).fill(""));
               setSkippedCount(0);
               setIsSessionActive(false);
               setIsInputFocused(true);
               setTimeLeft(selectedTime);
               setTypedInput("");
-              setCurrentChunkIndex(nextIndex);
               setActiveWordIndex(0);
+              setDisplayStart(0);
             }}
           />
         )}

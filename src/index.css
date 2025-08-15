@@ -39,6 +39,28 @@ body {
   animation: blink 1.5s step-start infinite;
 }
 
+.animate-line-shift {
+  transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+}
+
+@keyframes slideUp {
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateY(-2.6rem);
+    opacity: 0;
+  }
+}
+
+.line-shifting {
+  animation: slideUp 0.3s ease-in-out forwards;
+}
+
 
 
 
