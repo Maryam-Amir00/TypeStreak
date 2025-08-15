@@ -40,16 +40,13 @@ body {
 }
 
 .animate-line-shift {
-  transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+  will-change: transform, opacity; 
 }
 
-@keyframes slideUp {
+@keyframes slideUpSmooth {
   0% {
     transform: translateY(0);
     opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
   }
   100% {
     transform: translateY(-2.6rem);
@@ -58,9 +55,8 @@ body {
 }
 
 .line-shifting {
-  animation: slideUp 0.3s ease-in-out forwards;
+  animation: slideUpSmooth 0.45s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
-
 
 
 

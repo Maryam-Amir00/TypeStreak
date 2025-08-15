@@ -134,7 +134,7 @@ const TypingBox = () => {
         setTimeout(() => {
           setDisplayStart((prev) => prev + wordsToShift);
           setIsLineShifting(false);
-        }, 150);
+        }, 300);
       }
     };
 
@@ -497,7 +497,6 @@ const TypingBox = () => {
             wordStatus={wordStatus}
             selectedTime={selectedTime}
             onRestart={(): void => {
-              resetWithNewWords();
               setWordStatus(new Array(5000).fill(null));
               setTypedHistory(new Array(5000).fill(""));
               setSkippedCount(0);
@@ -507,6 +506,7 @@ const TypingBox = () => {
               setTypedInput("");
               setActiveWordIndex(0);
               setDisplayStart(0);
+              resetWithNewWords();
             }}
           />
         )}
